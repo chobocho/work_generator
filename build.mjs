@@ -54,12 +54,13 @@ html = inject(html, "/*INLINE_JS*/", js);
 writeFileSync(join(root, "index.html"), html, "utf8");
 console.log("Wrote index.html (" + html.length + " bytes)");
 
-// 4) Copy the runtime artifacts into release/.
+// 4) Copy ONLY the runtime artifact(s) into release/ (CLAUDE.md §9).
+//    The app is a single self-contained file, so index.html is all that runs.
 const releaseDir = join(root, "release");
 if (!existsSync(releaseDir)) {
   mkdirSync(releaseDir, { recursive: true });
 }
-for (const file of ["index.html", "README.md", "history.html"]) {
+for (const file of ["index.html"]) {
   if (existsSync(join(root, file))) {
     copyFileSync(join(root, file), join(releaseDir, file));
     console.log("Copied -> release/" + file);
