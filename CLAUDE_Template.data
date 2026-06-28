@@ -64,7 +64,7 @@
 
 ## 9. 마무리 (Build & Release)
 - 빌드 시 `index.html` 하나의 산출물로 나오도록 할 것
-- 실행에 필요한 파일만 `release` 폴더로 복사하는 `build.sh`(POSIX) 작성
-- 실행에 필요한 파일만 `release` 폴더로 복사하는 Windows용 `build.bat` 작성
+- `index.html`만 `release` 폴더로 복사하는 `build.sh`(POSIX) 작성
+- `index.html`만 `release` 폴더로 복사하는 Windows용 `build.bat` 작성
 - Windows용 `build.bat`는 한글이 깨지지 않도록 cp949 사용
 - 인터넷 검색하여 좋은 아이디어가 있으면 추가할 것

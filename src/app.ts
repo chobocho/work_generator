@@ -363,13 +363,15 @@ namespace App.Main {
     applyStaticLabels();
     wireEvents();
 
+    // The template always comes from the current default; only the user's input
+    // values are resumed. This way template improvements (e.g. field order)
+    // always apply, even when an older session is restored.
+    state.templateText = defaultTemplate();
     const session = await App.DB.loadSession();
-    if (session && session.templateText) {
-      state.templateText = session.templateText;
+    if (session && session.values && Object.keys(session.values).length > 0) {
       state.values = withDefaults(session.values);
       U.toast(App.I18n.t("restored"));
     } else {
-      state.templateText = defaultTemplate();
       state.values = seededDefaults();
     }
 
