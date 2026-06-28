@@ -439,6 +439,30 @@ var App;
             });
         }
         TemplateEngine.merge = merge;
+        /** True when the line contains at least one placeholder with no value. */
+        function lineHasUnfilled(line, values) {
+            PLACEHOLDER_RE.lastIndex = 0;
+            let m;
+            while ((m = PLACEHOLDER_RE.exec(line)) !== null) {
+                const v = values[makeKey(m[1], m[2] || "")];
+                if (v === undefined || v.trim() === "") {
+                    return true;
+                }
+            }
+            return false;
+        }
+        /**
+         * Produce the final document for saving: every line that still contains an
+         * unfilled placeholder is dropped entirely, then remaining placeholders are
+         * filled with their values.
+         */
+        function generate(template, values) {
+            const kept = template
+                .split(/\r?\n/)
+                .filter((line) => !lineHasUnfilled(line, values));
+            return merge(kept.join("\n"), values);
+        }
+        TemplateEngine.generate = generate;
         /** True when every placeholder in the template has a non-empty value. */
         function isComplete(template, values) {
             return parsePlaceholders(template).every((p) => {
@@ -810,18 +834,23 @@ var App;
             btn.title = ok ? App.I18n.t("save") : App.I18n.t("needTitle");
         }
         // --- actions -------------------------------------------------------------
+        /** Final document for copy/save: unfilled-placeholder lines are removed. */
+        function finalOutput() {
+            return T.generate(state.templateText, state.values);
+        }
         function copyOutput() {
+            const text = finalOutput();
             const done = () => U.toast(App.I18n.t("copied"));
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(rawOutput).then(done, () => fallbackCopy(done));
+                navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
             }
             else {
-                fallbackCopy(done);
+                fallbackCopy(text, done);
             }
         }
-        function fallbackCopy(done) {
+        function fallbackCopy(text, done) {
             const ta = document.createElement("textarea");
-            ta.value = rawOutput;
+            ta.value = text;
             ta.style.position = "fixed";
             ta.style.opacity = "0";
             document.body.appendChild(ta);
@@ -839,7 +868,7 @@ var App;
                 U.toast(App.I18n.t("needTitle"));
                 return;
             }
-            const blob = new Blob([rawOutput], { type: "text/markdown;charset=utf-8" });
+            const blob = new Blob([finalOutput()], { type: "text/markdown;charset=utf-8" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;

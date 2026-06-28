@@ -77,6 +77,28 @@ namespace TestRunner {
     eq(out, "{%제목%}", "merge treats whitespace-only as empty");
   }
 
+  // --- generate (drop unfilled lines on save) ------------------------------
+  function testGenerateDropsUnfilledLine(): void {
+    const out = TE.generate("a\n- {%목표%1}\nb", {});
+    eq(out, "a\nb", "generate drops the unfilled placeholder line");
+  }
+
+  function testGenerateKeepsFilledLine(): void {
+    const out = TE.generate("- {%목표%1}", { "목표1": "go" });
+    eq(out, "- go", "generate keeps and fills a filled line");
+  }
+
+  function testGenerateMixed(): void {
+    const tpl = "x\n- {%목표%1}\n- {%목표%2}\ny";
+    const out = TE.generate(tpl, { "목표1": "A" });
+    eq(out, "x\n- A\ny", "generate keeps filled goal, drops empty goal");
+  }
+
+  function testGenerateWhitespaceIsEmpty(): void {
+    const out = TE.generate("keep\n{%제목%}", { "제목": "   " });
+    eq(out, "keep", "generate treats whitespace-only value as empty");
+  }
+
   // --- completeness --------------------------------------------------------
   function testCompleteness(): void {
     const tpl = "{%제목%}-{%언어1%}";
@@ -95,6 +117,10 @@ namespace TestRunner {
     testMergeIndexed();
     testMergeKeepsUnfilled();
     testMergeEmptyValueKept();
+    testGenerateDropsUnfilledLine();
+    testGenerateKeepsFilledLine();
+    testGenerateMixed();
+    testGenerateWhitespaceIsEmpty();
     testCompleteness();
 
     console.log(`\nTemplate engine tests: ${passed} passed, ${failed} failed.`);

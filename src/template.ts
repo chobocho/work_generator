@@ -53,6 +53,31 @@ namespace App.TemplateEngine {
     });
   }
 
+  /** True when the line contains at least one placeholder with no value. */
+  function lineHasUnfilled(line: string, values: Record<string, string>): boolean {
+    PLACEHOLDER_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = PLACEHOLDER_RE.exec(line)) !== null) {
+      const v = values[makeKey(m[1], m[2] || "")];
+      if (v === undefined || v.trim() === "") {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Produce the final document for saving: every line that still contains an
+   * unfilled placeholder is dropped entirely, then remaining placeholders are
+   * filled with their values.
+   */
+  export function generate(template: string, values: Record<string, string>): string {
+    const kept = template
+      .split(/\r?\n/)
+      .filter((line) => !lineHasUnfilled(line, values));
+    return merge(kept.join("\n"), values);
+  }
+
   /** True when every placeholder in the template has a non-empty value. */
   export function isComplete(template: string, values: Record<string, string>): boolean {
     return parsePlaceholders(template).every((p) => {

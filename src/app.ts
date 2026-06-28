@@ -170,18 +170,24 @@ namespace App.Main {
   }
 
   // --- actions -------------------------------------------------------------
+  /** Final document for copy/save: unfilled-placeholder lines are removed. */
+  function finalOutput(): string {
+    return T.generate(state.templateText, state.values);
+  }
+
   function copyOutput(): void {
+    const text = finalOutput();
     const done = () => U.toast(App.I18n.t("copied"));
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(rawOutput).then(done, () => fallbackCopy(done));
+      navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
     } else {
-      fallbackCopy(done);
+      fallbackCopy(text, done);
     }
   }
 
-  function fallbackCopy(done: () => void): void {
+  function fallbackCopy(text: string, done: () => void): void {
     const ta = document.createElement("textarea");
-    ta.value = rawOutput;
+    ta.value = text;
     ta.style.position = "fixed";
     ta.style.opacity = "0";
     document.body.appendChild(ta);
@@ -199,7 +205,7 @@ namespace App.Main {
       U.toast(App.I18n.t("needTitle"));
       return;
     }
-    const blob = new Blob([rawOutput], { type: "text/markdown;charset=utf-8" });
+    const blob = new Blob([finalOutput()], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

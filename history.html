@@ -32,6 +32,16 @@
   <h1>📜 작업 이력</h1>
 
   <section>
+    <h2>v1.2.0 — 미입력 줄 제거 저장</h2>
+    <p class="date">2026-06-28</p>
+    <ul>
+      <li>저장(💾)·복사 시, 사용자가 입력하지 않은 플레이스홀더가 있는 <strong>줄 전체를 삭제</strong>하고 결과물을 생성하도록 <code>TemplateEngine.generate()</code> 추가. (예: 미입력 <code>{%목표%1%}</code> 줄 제거)</li>
+      <li>미리보기는 작성 현황 확인을 위해 미입력 플레이스홀더를 그대로 표시(기존 동작 유지)하고, 최종 산출물에서만 빈 줄을 제거하도록 분리.</li>
+      <li><code>generate()</code> 단위 테스트 4건 추가 (총 24건 통과).</li>
+    </ul>
+  </section>
+
+  <section>
     <h2>v1.1.1 — release 산출물 이름 변경</h2>
     <p class="date">2026-06-28</p>
     <ul>
