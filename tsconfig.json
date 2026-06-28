@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "none",
+    "lib": ["ES2019", "DOM", "DOM.Iterable"],
+    "outFile": "dist/bundle.js",
+    "strict": true,
+    "noImplicitAny": true,
+    "removeComments": false,
+    "sourceMap": false
+  },
+  "files": [
+    "src/types.ts",
+    "src/i18n.ts",
+    "src/template.ts",
+    "src/db.ts",
+    "src/ui.ts",
+    "src/app.ts"
+  ]
+}

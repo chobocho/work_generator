@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>작업 이력 — CLAUDE.md 생성기</title>
+  <style>
+    body {
+      font-family: system-ui, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 24px 18px 60px;
+      color: #1d2433;
+      line-height: 1.6;
+      background: #f4f6fb;
+    }
+    h1 { border-bottom: 2px solid #4f46e5; padding-bottom: 8px; }
+    h2 { margin-top: 28px; color: #4f46e5; font-size: 1.1rem; }
+    .date { color: #6b7280; font-size: 0.85rem; }
+    ul { margin: 6px 0 0; }
+    section {
+      background: #fff;
+      border: 1px solid #e3e8f0;
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(20, 30, 60, 0.06);
+    }
+  </style>
+</head>
+<body>
+  <h1>📜 작업 이력</h1>
+
+  <section>
+    <h2>v1.0.0 — 최초 릴리스</h2>
+    <p class="date">2026-06-28</p>
+    <ul>
+      <li>HTML5 기반 <strong>CLAUDE.md 생성기</strong> 최초 구현 (외부 의존성 없는 단일 산출물 웹앱).</li>
+      <li>TypeScript로 모듈화하여 작성: <code>types</code>, <code>i18n</code>, <code>template</code>, <code>db</code>, <code>ui</code>, <code>app</code>.</li>
+      <li>템플릿 엔진: <code>{%이름%}</code> / <code>{%이름%번호}</code> 플레이스홀더 파싱·병합 구현, 단위 테스트 20건 통과.</li>
+      <li><code>CLAUDE_Template.data</code>를 내장하여 입력값을 머지해 실시간 미리보기 제공.</li>
+      <li>IndexedDB 저장소: 작업물 저장·불러오기·이름 변경·삭제, 전체 JSON 내보내기/가져오기, 세션 자동 저장(작업 이어하기) 지원. 저장소 오류 시 메모리 폴백으로 동작 유지.</li>
+      <li>한글·영어 다국어(i18n) 전환, 라이트/다크 테마, 글자 크기 조절 지원.</li>
+      <li>모바일 터치·폴더블 대응 반응형 레이아웃, 두 손가락 확대/축소(pinch zoom) 및 Ctrl+휠 줌 구현.</li>
+      <li>브라우저 기본 폰트만 사용, 이모지 활용, CDN·외부 폰트 참조 없음.</li>
+      <li>단일 <code>index.html</code> 산출 빌드 파이프라인(<code>build.mjs</code>) 및 <code>build.sh</code>·<code>build.bat</code>(cp949) 작성.</li>
+    </ul>
+  </section>
+</body>
+</html>

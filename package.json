@@ -1,0 +1,13 @@
+{
+  "name": "work_generator",
+  "version": "1.0.0",
+  "description": "HTML5 기반 CLAUDE.md 생성기 (외부 의존성 없는 단일 산출물 웹앱)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node build.mjs --test-only && node dist/test.js",
+    "serve": "python -m http.server 8001"
+  },
+  "license": "MIT"
+}

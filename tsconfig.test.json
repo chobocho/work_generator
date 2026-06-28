@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "none",
+    "lib": ["ES2019"],
+    "outFile": "dist/test.js",
+    "strict": true,
+    "noImplicitAny": true
+  },
+  "files": [
+    "src/types.ts",
+    "src/template.ts",
+    "test/template.test.ts"
+  ]
+}
