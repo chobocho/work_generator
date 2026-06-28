@@ -136,7 +136,9 @@ namespace App.Main {
   }
 
   function updatePreview(): void {
-    rawOutput = T.merge(state.templateText, state.values);
+    // Preview mirrors the saved document: lines with unfilled placeholders are
+    // dropped, so what you see is exactly what gets copied/saved.
+    rawOutput = T.generate(state.templateText, state.values);
     U.$("#preview").innerHTML = U.renderMarkdown(rawOutput);
   }
 
@@ -170,13 +172,10 @@ namespace App.Main {
   }
 
   // --- actions -------------------------------------------------------------
-  /** Final document for copy/save: unfilled-placeholder lines are removed. */
-  function finalOutput(): string {
-    return T.generate(state.templateText, state.values);
-  }
-
+  // rawOutput holds the generated document (kept in sync by updatePreview),
+  // which is identical to what the preview shows.
   function copyOutput(): void {
-    const text = finalOutput();
+    const text = rawOutput;
     const done = () => U.toast(App.I18n.t("copied"));
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
@@ -205,7 +204,7 @@ namespace App.Main {
       U.toast(App.I18n.t("needTitle"));
       return;
     }
-    const blob = new Blob([finalOutput()], { type: "text/markdown;charset=utf-8" });
+    const blob = new Blob([rawOutput], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
