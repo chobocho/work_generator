@@ -31,51 +31,29 @@
       <h2><span>📝</span><span data-i18n="inputs">입력 값</span></h2>
       <div id="status" class="status"></div>
       <div id="fields"></div>
-
-      <div id="templatePanel" class="template-panel">
-        <button id="toggleTemplate" class="btn" type="button" data-i18n="editTemplate">템플릿 편집</button>
-        <div class="body">
-          <textarea id="templateText" spellcheck="false"></textarea>
-          <div class="btn-row">
-            <button id="loadTemplateBtn" class="btn" type="button" data-i18n="loadTemplateFile">템플릿 파일 불러오기</button>
-            <button id="resetTemplateBtn" class="btn" type="button" data-i18n="resetTemplate">기본 템플릿으로</button>
-          </div>
-        </div>
-      </div>
+      <div id="dbNotice" class="notice"></div>
     </section>
 
-    <!-- Preview -->
+    <!-- Preview / Template -->
     <section class="panel preview-panel">
-      <h2>
-        <span>👁️</span><span data-i18n="preview">미리보기</span>
-        <span class="spacer"></span>
-      </h2>
-      <div class="btn-row" style="margin-top:0;margin-bottom:10px;">
-        <button id="copyBtn" class="btn" type="button" data-i18n="copy">복사</button>
-        <button id="downloadBtn" class="btn primary" type="button" data-i18n="download">CLAUDE.md 다운로드</button>
+      <div class="preview-head">
+        <div class="tabs">
+          <button class="tab active" type="button" data-view="preview" data-i18n="preview">미리보기</button>
+          <button class="tab" type="button" data-view="template" data-i18n="template">템플릿</button>
+        </div>
+        <div class="preview-tools">
+          <button id="resetBtn" class="icon-btn" type="button" data-i18n-title="reset" title="초기화">🔄</button>
+          <button id="copyBtn" class="icon-btn" type="button" data-i18n-title="copy" title="복사">📋</button>
+          <button id="downloadBtn" class="icon-btn save" type="button" data-i18n-title="save" title="CLAUDE.md 저장">💾</button>
+        </div>
       </div>
+
       <div id="previewWrap" class="preview-wrap">
         <div id="previewStage">
           <article id="preview" class="preview"></article>
         </div>
       </div>
-    </section>
-
-    <!-- Library -->
-    <section class="panel library">
-      <h2><span>💾</span><span data-i18n="library">저장된 작업물</span></h2>
-      <input id="workName" type="text" data-i18n-ph="workName" />
-      <div class="btn-row">
-        <button id="saveBtn" class="btn primary" type="button" data-i18n="save">저장</button>
-        <button id="saveAsNewBtn" class="btn" type="button" data-i18n="saveAsNew">새로 저장</button>
-        <button id="newBtn" class="btn" type="button" data-i18n="newWork">새 작업</button>
-      </div>
-      <div id="worksList"></div>
-      <div class="btn-row">
-        <button id="exportBtn" class="btn" type="button" data-i18n="exportAll">전체 내보내기(JSON)</button>
-        <button id="importBtn" class="btn" type="button" data-i18n="importAll">가져오기(JSON)</button>
-      </div>
-      <div id="dbNotice" class="notice"></div>
+      <textarea id="templateText" class="template-edit" spellcheck="false" hidden></textarea>
     </section>
   </main>
 
@@ -84,10 +62,6 @@
   </footer>
 
   <div id="toast"></div>
-
-  <!-- Hidden file pickers -->
-  <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
-  <input id="templateFile" type="file" accept=".data,.md,.txt,text/plain" style="display:none" />
 
   <script>window.__DEFAULT_TEMPLATE__ = /*INLINE_TEMPLATE*/"";</script>
   <script>/*INLINE_JS*/</script>

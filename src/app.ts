@@ -12,18 +12,23 @@ namespace App.Main {
   const T = App.TemplateEngine;
   const U = App.UI;
 
+  // Seed values applied when the user has not typed anything (CLAUDE.md request).
+  const DEFAULT_VALUES: Record<string, string> = {
+    "언어1": "HTML5",
+    "언어2": "TypeScript",
+  };
+
+  // Placeholder key that gates saving: an empty title disables the save button.
+  const TITLE_KEY = "제목";
+
   interface State {
     templateText: string;
     values: Record<string, string>;
-    currentId: string | null;
-    name: string;
   }
 
   const state: State = {
     templateText: "",
     values: {},
-    currentId: null,
-    name: "",
   };
 
   let rawOutput = "";
@@ -34,11 +39,15 @@ namespace App.Main {
     return typeof __DEFAULT_TEMPLATE__ === "string" ? __DEFAULT_TEMPLATE__ : "";
   }
 
+  function seededDefaults(): Record<string, string> {
+    return { ...DEFAULT_VALUES };
+  }
+
   // --- persistence ---------------------------------------------------------
   function snapshot(): App.WorkRecord {
     return {
-      id: state.currentId ?? "session",
-      name: state.name || App.I18n.t("untitled"),
+      id: "session",
+      name: "",
       templateText: state.templateText,
       values: state.values,
       updatedAt: Date.now(),
@@ -62,10 +71,10 @@ namespace App.Main {
         node.textContent = App.I18n.t(key);
       }
     });
-    document.querySelectorAll<HTMLElement>("[data-i18n-ph]").forEach((node) => {
-      const key = node.getAttribute("data-i18n-ph");
+    document.querySelectorAll<HTMLElement>("[data-i18n-title]").forEach((node) => {
+      const key = node.getAttribute("data-i18n-title");
       if (key) {
-        (node as HTMLInputElement).placeholder = App.I18n.t(key);
+        node.title = App.I18n.t(key);
       }
     });
     document.documentElement.lang = App.I18n.getLang();
@@ -90,6 +99,12 @@ namespace App.Main {
 
       const label = document.createElement("label");
       label.textContent = T.labelOf(p);
+      if (p.key === TITLE_KEY) {
+        const req = document.createElement("span");
+        req.className = "req";
+        req.textContent = " *";
+        label.appendChild(req);
+      }
       const hint = document.createElement("span");
       hint.className = "field-token";
       hint.textContent = p.raw;
@@ -105,6 +120,7 @@ namespace App.Main {
         autoGrow(input);
         updatePreview();
         updateStatus();
+        updateSaveState();
         scheduleAutosave();
       });
 
@@ -136,185 +152,24 @@ namespace App.Main {
     }
   }
 
-  async function renderLibrary(): Promise<void> {
-    const list = U.$("#worksList");
-    list.innerHTML = "";
-    const works = await App.DB.listWorks();
-    if (works.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "muted";
-      empty.setAttribute("data-i18n", "noWorks");
-      empty.textContent = App.I18n.t("noWorks");
-      list.appendChild(empty);
-      return;
+  /** A non-empty project title is required before CLAUDE.md can be saved. */
+  function titleSatisfied(): boolean {
+    const hasTitle = T.parsePlaceholders(state.templateText).some((p) => p.key === TITLE_KEY);
+    if (!hasTitle) {
+      return true;
     }
-    works.forEach((w) => list.appendChild(workRow(w)));
+    const v = state.values[TITLE_KEY];
+    return v !== undefined && v.trim() !== "";
   }
 
-  function workRow(w: App.WorkRecord): HTMLElement {
-    const row = document.createElement("div");
-    row.className = "work-row" + (w.id === state.currentId ? " active" : "");
-
-    const name = document.createElement("span");
-    name.className = "work-name";
-    name.textContent = w.name;
-    row.appendChild(name);
-
-    const actions = document.createElement("div");
-    actions.className = "work-actions";
-
-    actions.appendChild(iconBtn(App.I18n.t("load"), "📂", () => void loadWork(w.id)));
-    actions.appendChild(iconBtn(App.I18n.t("rename"), "✏️", () => void renameWork(w)));
-    actions.appendChild(iconBtn(App.I18n.t("remove"), "🗑️", () => void deleteWork(w)));
-
-    row.appendChild(actions);
-    return row;
-  }
-
-  function iconBtn(title: string, glyph: string, onClick: () => void): HTMLButtonElement {
-    const b = document.createElement("button");
-    b.className = "icon-btn";
-    b.type = "button";
-    b.title = title;
-    b.textContent = glyph;
-    b.addEventListener("click", onClick);
-    return b;
+  function updateSaveState(): void {
+    const btn = U.$("#downloadBtn") as HTMLButtonElement;
+    const ok = titleSatisfied();
+    btn.disabled = !ok;
+    btn.title = ok ? App.I18n.t("save") : App.I18n.t("needTitle");
   }
 
   // --- actions -------------------------------------------------------------
-  async function loadWork(id: string): Promise<void> {
-    const w = await App.DB.getWork(id);
-    if (!w) {
-      return;
-    }
-    state.currentId = w.id;
-    state.name = w.name;
-    state.templateText = w.templateText;
-    state.values = { ...w.values };
-    (U.$("#workName") as HTMLInputElement).value = w.name;
-    (U.$("#templateText") as HTMLTextAreaElement).value = w.templateText;
-    renderFields();
-    updatePreview();
-    updateStatus();
-    await renderLibrary();
-    scheduleAutosave();
-    U.toast(App.I18n.t("loaded"));
-  }
-
-  async function renameWork(w: App.WorkRecord): Promise<void> {
-    const next = window.prompt(App.I18n.t("promptRename"), w.name);
-    if (next === null) {
-      return;
-    }
-    const trimmed = next.trim() || App.I18n.t("untitled");
-    await App.DB.saveWork({ ...w, name: trimmed, updatedAt: Date.now() });
-    if (state.currentId === w.id) {
-      state.name = trimmed;
-      (U.$("#workName") as HTMLInputElement).value = trimmed;
-    }
-    await renderLibrary();
-  }
-
-  async function deleteWork(w: App.WorkRecord): Promise<void> {
-    if (!window.confirm(App.I18n.t("confirmDelete"))) {
-      return;
-    }
-    await App.DB.deleteWork(w.id);
-    if (state.currentId === w.id) {
-      state.currentId = null;
-    }
-    await renderLibrary();
-    U.toast(App.I18n.t("deleted"));
-  }
-
-  async function save(asNew: boolean): Promise<void> {
-    const nameInput = U.$("#workName") as HTMLInputElement;
-    let name = nameInput.value.trim();
-    if (!name) {
-      const entered = window.prompt(App.I18n.t("promptName"), "");
-      if (entered === null) {
-        return;
-      }
-      name = entered.trim() || App.I18n.t("untitled");
-      nameInput.value = name;
-    }
-    state.name = name;
-    if (asNew || !state.currentId) {
-      state.currentId = U.genId();
-    }
-    await App.DB.saveWork({
-      id: state.currentId,
-      name,
-      templateText: state.templateText,
-      values: state.values,
-      updatedAt: Date.now(),
-    });
-    await renderLibrary();
-    U.toast(App.I18n.t("saved"));
-  }
-
-  function newWork(): void {
-    state.currentId = null;
-    state.name = "";
-    state.templateText = defaultTemplate();
-    state.values = {};
-    (U.$("#workName") as HTMLInputElement).value = "";
-    (U.$("#templateText") as HTMLTextAreaElement).value = state.templateText;
-    renderFields();
-    updatePreview();
-    updateStatus();
-    void renderLibrary();
-    scheduleAutosave();
-  }
-
-  async function exportAll(): Promise<void> {
-    const works = await App.DB.listWorks();
-    const payload = JSON.stringify({ version: 1, works }, null, 2);
-    downloadText("work_generator_backup.json", payload, "application/json");
-  }
-
-  function importAll(file: File): void {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const parsed = JSON.parse(String(reader.result)) as { works?: App.WorkRecord[] };
-        const works = Array.isArray(parsed.works) ? parsed.works : [];
-        const valid = works.filter(
-          (w) => w && typeof w.id === "string" && typeof w.templateText === "string"
-        );
-        await App.DB.replaceAll(valid);
-        await renderLibrary();
-        U.toast(App.I18n.t("imported"));
-      } catch {
-        U.toast("JSON error");
-      }
-    };
-    reader.readAsText(file);
-  }
-
-  function loadTemplateFile(file: File): void {
-    const reader = new FileReader();
-    reader.onload = () => {
-      state.templateText = String(reader.result);
-      (U.$("#templateText") as HTMLTextAreaElement).value = state.templateText;
-      renderFields();
-      updatePreview();
-      updateStatus();
-      scheduleAutosave();
-    };
-    reader.readAsText(file);
-  }
-
-  function downloadText(filename: string, text: string, mime: string): void {
-    const blob = new Blob([text], { type: mime + ";charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   function copyOutput(): void {
     const done = () => U.toast(App.I18n.t("copied"));
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -337,6 +192,46 @@ namespace App.Main {
     } finally {
       document.body.removeChild(ta);
     }
+  }
+
+  function downloadOutput(): void {
+    if (!titleSatisfied()) {
+      U.toast(App.I18n.t("needTitle"));
+      return;
+    }
+    const blob = new Blob([rawOutput], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "CLAUDE.md";
+    a.click();
+    URL.revokeObjectURL(url);
+    U.toast(App.I18n.t("downloaded"));
+  }
+
+  function resetAll(): void {
+    if (!window.confirm(App.I18n.t("confirmReset"))) {
+      return;
+    }
+    state.templateText = defaultTemplate();
+    state.values = seededDefaults();
+    (U.$("#templateText") as HTMLTextAreaElement).value = state.templateText;
+    renderFields();
+    updatePreview();
+    updateStatus();
+    updateSaveState();
+    setView("preview");
+    scheduleAutosave();
+  }
+
+  // --- view switching (preview / template) ---------------------------------
+  function setView(view: "preview" | "template"): void {
+    const showTemplate = view === "template";
+    U.$("#previewWrap").hidden = showTemplate;
+    U.$("#templateText").hidden = !showTemplate;
+    document.querySelectorAll<HTMLButtonElement>(".tab").forEach((b) => {
+      b.classList.toggle("active", b.getAttribute("data-view") === view);
+    });
   }
 
   // --- zoom / appearance ---------------------------------------------------
@@ -366,6 +261,7 @@ namespace App.Main {
         return;
       }
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      // Only intercept when two fingers are down; one finger scrolls normally.
       if (pointers.size === 2 && startDist > 0) {
         const pts = [...pointers.values()];
         const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
@@ -399,7 +295,7 @@ namespace App.Main {
     App.I18n.setLang(lang);
     applyStaticLabels();
     updateStatus();
-    void renderLibrary();
+    updateSaveState();
     document.querySelectorAll<HTMLButtonElement>(".lang-btn").forEach((b) => {
       b.classList.toggle("active", b.getAttribute("data-lang") === lang);
     });
@@ -411,41 +307,9 @@ namespace App.Main {
 
   // --- wiring --------------------------------------------------------------
   function wireEvents(): void {
-    U.$("#saveBtn").addEventListener("click", () => void save(false));
-    U.$("#saveAsNewBtn").addEventListener("click", () => void save(true));
-    U.$("#newBtn").addEventListener("click", () => newWork());
     U.$("#copyBtn").addEventListener("click", () => copyOutput());
-    U.$("#downloadBtn").addEventListener("click", () =>
-      downloadText("CLAUDE.md", rawOutput, "text/markdown")
-    );
-    U.$("#exportBtn").addEventListener("click", () => void exportAll());
-
-    const importFile = U.$("#importFile") as HTMLInputElement;
-    U.$("#importBtn").addEventListener("click", () => importFile.click());
-    importFile.addEventListener("change", () => {
-      if (importFile.files && importFile.files[0]) {
-        importAll(importFile.files[0]);
-        importFile.value = "";
-      }
-    });
-
-    const tplFile = U.$("#templateFile") as HTMLInputElement;
-    U.$("#loadTemplateBtn").addEventListener("click", () => tplFile.click());
-    tplFile.addEventListener("change", () => {
-      if (tplFile.files && tplFile.files[0]) {
-        loadTemplateFile(tplFile.files[0]);
-        tplFile.value = "";
-      }
-    });
-
-    U.$("#resetTemplateBtn").addEventListener("click", () => {
-      state.templateText = defaultTemplate();
-      (U.$("#templateText") as HTMLTextAreaElement).value = state.templateText;
-      renderFields();
-      updatePreview();
-      updateStatus();
-      scheduleAutosave();
-    });
+    U.$("#downloadBtn").addEventListener("click", () => downloadOutput());
+    U.$("#resetBtn").addEventListener("click", () => resetAll());
 
     const tplArea = U.$("#templateText") as HTMLTextAreaElement;
     tplArea.addEventListener("input", () => {
@@ -453,11 +317,12 @@ namespace App.Main {
       renderFields();
       updatePreview();
       updateStatus();
+      updateSaveState();
       scheduleAutosave();
     });
 
-    U.$("#toggleTemplate").addEventListener("click", () => {
-      U.$("#templatePanel").classList.toggle("open");
+    document.querySelectorAll<HTMLButtonElement>(".tab").forEach((b) => {
+      b.addEventListener("click", () => setView(b.getAttribute("data-view") as "preview" | "template"));
     });
 
     document.querySelectorAll<HTMLButtonElement>(".lang-btn").forEach((b) => {
@@ -470,8 +335,7 @@ namespace App.Main {
     });
 
     U.$("#themeToggle").addEventListener("click", () => {
-      const dark = !document.body.classList.contains("dark");
-      setTheme(dark);
+      setTheme(!document.body.classList.contains("dark"));
     });
 
     enablePinchZoom();
@@ -487,19 +351,19 @@ namespace App.Main {
     if (session && session.templateText) {
       state.templateText = session.templateText;
       state.values = { ...session.values };
-      state.name = session.name === App.I18n.t("untitled") ? "" : session.name;
       U.toast(App.I18n.t("restored"));
     } else {
       state.templateText = defaultTemplate();
+      state.values = seededDefaults();
     }
 
     (U.$("#templateText") as HTMLTextAreaElement).value = state.templateText;
-    (U.$("#workName") as HTMLInputElement).value = state.name;
 
     renderFields();
     updatePreview();
     updateStatus();
-    await renderLibrary();
+    updateSaveState();
+    setView("preview");
 
     if (App.DB.isMemoryMode()) {
       const notice = U.$("#dbNotice");

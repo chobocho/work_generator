@@ -32,6 +32,20 @@
   <h1>📜 작업 이력</h1>
 
   <section>
+    <h2>v1.1.0 — UI 개편</h2>
+    <p class="date">2026-06-28</p>
+    <ul>
+      <li>미리보기 영역 터치 스크롤 불가 문제 수정: <code>touch-action: none</code> → <code>pan-x pan-y</code> (한 손가락 스크롤 허용, 두 손가락 핀치 줌은 유지).</li>
+      <li>화면을 <strong>입력 / 미리보기</strong> 2단 구성으로 단순화하고 "저장된 작업물(라이브러리)" 패널을 제거.</li>
+      <li>미리보기 우측 <strong>💾 아이콘</strong>으로 <code>CLAUDE.md</code> 파일 저장.</li>
+      <li>템플릿 편집을 미리보기 영역의 <strong>탭(미리보기 / 템플릿)</strong>으로 이동하고 <strong>🔄 초기화</strong> 버튼 추가.</li>
+      <li>미입력 시 기본값 적용: <code>언어1=HTML5</code>, <code>언어2=TypeScript</code>.</li>
+      <li>프로젝트 제목(<code>제목</code>)이 비어 있으면 저장(💾) 버튼 비활성화, 제목 항목에 필수(*) 표시.</li>
+      <li>사용하지 않게 된 라이브러리·내보내기/가져오기 코드 및 스타일 제거(§0). IndexedDB는 "작업 이어하기"용 세션 저장으로 유지.</li>
+    </ul>
+  </section>
+
+  <section>
     <h2>v1.0.1 — release 폴더 정리</h2>
     <p class="date">2026-06-28</p>
     <ul>

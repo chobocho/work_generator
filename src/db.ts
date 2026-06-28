@@ -1,14 +1,13 @@
 /// <reference path="types.ts" />
 
 /**
- * IndexedDB-backed store for saved works plus a single auto-saved session.
- * Degrades gracefully to an in-memory map when IndexedDB is missing or broken,
- * so the app keeps working even if the database is corrupted (CLAUDE.md §6).
+ * IndexedDB-backed store for the single auto-saved session ("작업 이어하기").
+ * Degrades gracefully to an in-memory value when IndexedDB is missing or broken,
+ * so the app keeps working even if the database is unavailable (CLAUDE.md §6).
  */
 namespace App.DB {
   const DB_NAME = "claude_md_generator";
   const DB_VERSION = 1;
-  const STORE_WORKS = "works";
   const STORE_SESSION = "session";
   const SESSION_KEY = "current";
 
@@ -16,7 +15,6 @@ namespace App.DB {
   let useMemory = false;
 
   // In-memory fallback storage.
-  const memWorks = new Map<string, App.WorkRecord>();
   let memSession: App.WorkRecord | null = null;
 
   export function isMemoryMode(): boolean {
@@ -41,9 +39,6 @@ namespace App.DB {
       }
       req.onupgradeneeded = () => {
         const db = req.result;
-        if (!db.objectStoreNames.contains(STORE_WORKS)) {
-          db.createObjectStore(STORE_WORKS, { keyPath: "id" });
-        }
         if (!db.objectStoreNames.contains(STORE_SESSION)) {
           db.createObjectStore(STORE_SESSION);
         }
@@ -59,76 +54,11 @@ namespace App.DB {
     });
   }
 
-  function tx(store: string, mode: IDBTransactionMode): IDBObjectStore {
-    const db = dbHandle as IDBDatabase;
-    return db.transaction(store, mode).objectStore(store);
-  }
-
   function wrap<T>(request: IDBRequest<T>): Promise<T> {
     return new Promise((resolve, reject) => {
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
-  }
-
-  export async function saveWork(rec: App.WorkRecord): Promise<void> {
-    if (useMemory) {
-      memWorks.set(rec.id, rec);
-      return;
-    }
-    try {
-      await wrap(tx(STORE_WORKS, "readwrite").put(rec));
-    } catch {
-      memWorks.set(rec.id, rec);
-    }
-  }
-
-  export async function listWorks(): Promise<App.WorkRecord[]> {
-    if (useMemory) {
-      return [...memWorks.values()].sort((a, b) => b.updatedAt - a.updatedAt);
-    }
-    try {
-      const all = await wrap<App.WorkRecord[]>(tx(STORE_WORKS, "readonly").getAll());
-      return all.sort((a, b) => b.updatedAt - a.updatedAt);
-    } catch {
-      return [...memWorks.values()].sort((a, b) => b.updatedAt - a.updatedAt);
-    }
-  }
-
-  export async function getWork(id: string): Promise<App.WorkRecord | undefined> {
-    if (useMemory) {
-      return memWorks.get(id);
-    }
-    try {
-      return await wrap<App.WorkRecord | undefined>(tx(STORE_WORKS, "readonly").get(id));
-    } catch {
-      return memWorks.get(id);
-    }
-  }
-
-  export async function deleteWork(id: string): Promise<void> {
-    if (useMemory) {
-      memWorks.delete(id);
-      return;
-    }
-    try {
-      await wrap(tx(STORE_WORKS, "readwrite").delete(id));
-    } catch {
-      memWorks.delete(id);
-    }
-  }
-
-  export async function replaceAll(records: App.WorkRecord[]): Promise<void> {
-    if (useMemory) {
-      records.forEach((r) => memWorks.set(r.id, r));
-      return;
-    }
-    try {
-      const store = tx(STORE_WORKS, "readwrite");
-      await Promise.all(records.map((r) => wrap(store.put(r))));
-    } catch {
-      records.forEach((r) => memWorks.set(r.id, r));
-    }
   }
 
   /** Persist the in-progress session so work can be resumed (CLAUDE.md §6). */
@@ -138,7 +68,8 @@ namespace App.DB {
       return;
     }
     try {
-      await wrap(tx(STORE_SESSION, "readwrite").put(rec, SESSION_KEY));
+      const db = dbHandle as IDBDatabase;
+      await wrap(db.transaction(STORE_SESSION, "readwrite").objectStore(STORE_SESSION).put(rec, SESSION_KEY));
     } catch {
       memSession = rec;
     }
@@ -149,7 +80,10 @@ namespace App.DB {
       return memSession;
     }
     try {
-      const r = await wrap<App.WorkRecord | undefined>(tx(STORE_SESSION, "readonly").get(SESSION_KEY));
+      const db = dbHandle as IDBDatabase;
+      const r = await wrap<App.WorkRecord | undefined>(
+        db.transaction(STORE_SESSION, "readonly").objectStore(STORE_SESSION).get(SESSION_KEY)
+      );
       return r ?? null;
     } catch {
       return memSession;

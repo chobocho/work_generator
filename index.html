@@ -78,10 +78,10 @@ header.app-bar {
 /* --- layout --- */
 main {
   display: grid;
-  grid-template-columns: 1fr 1fr 320px;
+  grid-template-columns: minmax(280px, 1fr) minmax(0, 1.4fr);
   gap: 16px;
   padding: 16px;
-  max-width: 1700px;
+  max-width: 1500px;
   margin: 0 auto;
 }
 .panel {
@@ -111,6 +111,7 @@ main {
   margin-left: 6px;
   font-family: ui-monospace, "Consolas", monospace;
 }
+.field label .req { color: #dc2626; font-weight: 700; }
 textarea, input[type="text"] {
   width: 100%;
   border: 1px solid var(--line);
@@ -144,17 +145,49 @@ button {
 .icon-btn {
   border: 1px solid var(--line);
   background: var(--panel);
+  color: var(--ink);
   border-radius: 8px;
-  padding: 4px 8px;
-  font-size: 0.95rem;
+  padding: 6px 10px;
+  font-size: 1.05rem;
   line-height: 1;
 }
+.icon-btn:hover { filter: brightness(0.97); }
+.icon-btn.save { background: var(--accent); border-color: var(--accent); }
+button:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
 
-/* --- template panel (collapsible) --- */
-.template-panel { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 12px; }
-.template-panel .body { display: none; }
-.template-panel.open .body { display: block; }
-.template-panel textarea { min-height: 200px; font-family: ui-monospace, "Consolas", monospace; font-size: 0.8rem; }
+/* --- preview header (tabs + tools) --- */
+.preview-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.tabs { display: flex; gap: 4px; }
+.tab {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.tab.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.preview-tools { margin-left: auto; display: flex; gap: 6px; }
+
+/* --- inline template editor --- */
+.template-edit {
+  width: 100%;
+  min-height: 60vh;
+  max-height: 70vh;
+  overflow: auto;
+  font-family: ui-monospace, "Consolas", monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.template-edit[hidden] { display: none; }
 
 /* --- preview --- */
 .preview-wrap {
@@ -164,7 +197,10 @@ button {
   padding: 14px;
   overflow: auto;
   max-height: 70vh;
-  touch-action: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  /* Allow one-finger pan/scroll; two-finger pinch is handled in JS. */
+  touch-action: pan-x pan-y;
 }
 .preview {
   font-size: 15px;
@@ -189,21 +225,6 @@ button {
 .preview pre code { background: none; padding: 0; }
 .preview ul { padding-left: 22px; }
 .preview p { margin: 8px 0; }
-
-/* --- library --- */
-.work-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  margin-bottom: 8px;
-}
-.work-row.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
-.work-name { flex: 1 1 auto; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.work-actions { display: flex; gap: 4px; }
-#worksList { margin: 12px 0; max-height: 40vh; overflow: auto; }
 
 .muted { color: var(--muted); font-size: 0.85rem; }
 .notice {
@@ -238,10 +259,6 @@ button {
 footer { text-align: center; color: var(--muted); font-size: 0.78rem; padding: 12px; }
 
 /* --- responsive: tablet / folded --- */
-@media (max-width: 1100px) {
-  main { grid-template-columns: 1fr 1fr; }
-  .panel.library { grid-column: 1 / -1; }
-}
 @media (max-width: 720px) {
   main { grid-template-columns: 1fr; }
   .app-bar h1 { font-size: 1rem; }
@@ -250,7 +267,7 @@ footer { text-align: center; color: var(--muted); font-size: 0.78rem; padding: 1
 /* --- high-resolution unfolded (e.g. Galaxy Fold7 main screen) --- */
 @media (min-width: 1800px) {
   body { font-size: 18px; }
-  main { max-width: 2200px; grid-template-columns: 1fr 1fr 380px; }
+  main { max-width: 2000px; }
 }
 </style>
 </head>
@@ -278,51 +295,29 @@ footer { text-align: center; color: var(--muted); font-size: 0.78rem; padding: 1
       <h2><span>📝</span><span data-i18n="inputs">입력 값</span></h2>
       <div id="status" class="status"></div>
       <div id="fields"></div>
-
-      <div id="templatePanel" class="template-panel">
-        <button id="toggleTemplate" class="btn" type="button" data-i18n="editTemplate">템플릿 편집</button>
-        <div class="body">
-          <textarea id="templateText" spellcheck="false"></textarea>
-          <div class="btn-row">
-            <button id="loadTemplateBtn" class="btn" type="button" data-i18n="loadTemplateFile">템플릿 파일 불러오기</button>
-            <button id="resetTemplateBtn" class="btn" type="button" data-i18n="resetTemplate">기본 템플릿으로</button>
-          </div>
-        </div>
-      </div>
+      <div id="dbNotice" class="notice"></div>
     </section>
 
-    <!-- Preview -->
+    <!-- Preview / Template -->
     <section class="panel preview-panel">
-      <h2>
-        <span>👁️</span><span data-i18n="preview">미리보기</span>
-        <span class="spacer"></span>
-      </h2>
-      <div class="btn-row" style="margin-top:0;margin-bottom:10px;">
-        <button id="copyBtn" class="btn" type="button" data-i18n="copy">복사</button>
-        <button id="downloadBtn" class="btn primary" type="button" data-i18n="download">CLAUDE.md 다운로드</button>
+      <div class="preview-head">
+        <div class="tabs">
+          <button class="tab active" type="button" data-view="preview" data-i18n="preview">미리보기</button>
+          <button class="tab" type="button" data-view="template" data-i18n="template">템플릿</button>
+        </div>
+        <div class="preview-tools">
+          <button id="resetBtn" class="icon-btn" type="button" data-i18n-title="reset" title="초기화">🔄</button>
+          <button id="copyBtn" class="icon-btn" type="button" data-i18n-title="copy" title="복사">📋</button>
+          <button id="downloadBtn" class="icon-btn save" type="button" data-i18n-title="save" title="CLAUDE.md 저장">💾</button>
+        </div>
       </div>
+
       <div id="previewWrap" class="preview-wrap">
         <div id="previewStage">
           <article id="preview" class="preview"></article>
         </div>
       </div>
-    </section>
-
-    <!-- Library -->
-    <section class="panel library">
-      <h2><span>💾</span><span data-i18n="library">저장된 작업물</span></h2>
-      <input id="workName" type="text" data-i18n-ph="workName" />
-      <div class="btn-row">
-        <button id="saveBtn" class="btn primary" type="button" data-i18n="save">저장</button>
-        <button id="saveAsNewBtn" class="btn" type="button" data-i18n="saveAsNew">새로 저장</button>
-        <button id="newBtn" class="btn" type="button" data-i18n="newWork">새 작업</button>
-      </div>
-      <div id="worksList"></div>
-      <div class="btn-row">
-        <button id="exportBtn" class="btn" type="button" data-i18n="exportAll">전체 내보내기(JSON)</button>
-        <button id="importBtn" class="btn" type="button" data-i18n="importAll">가져오기(JSON)</button>
-      </div>
-      <div id="dbNotice" class="notice"></div>
+      <textarea id="templateText" class="template-edit" spellcheck="false" hidden></textarea>
     </section>
   </main>
 
@@ -332,11 +327,7 @@ footer { text-align: center; color: var(--muted); font-size: 0.78rem; padding: 1
 
   <div id="toast"></div>
 
-  <!-- Hidden file pickers -->
-  <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
-  <input id="templateFile" type="file" accept=".data,.md,.txt,text/plain" style="display:none" />
-
-  <script>window.__DEFAULT_TEMPLATE__ = "# 프로젝트 가이드라인 (CLAUDE.md)\n\n## 0. 기본 원칙\n- 사용하지 않는 코드나 에셋은 즉시 삭제하라.\n- **금지:** `global` 변수 사용, 하드코딩된 좌표 값\n- 내부 동작의 기본 언어(코드, 식별자, 주석 의도)는 영어로 할 것\n- 사용자 대상 응답 및 문서(readme, history)는 한글로 작성할 것\n\n## 1. 개요\n- **목적:** {%언어1%} 기반의 {%제목%} 앱\n- **엔진/언어:** {%언어2%}\n- **핵심 목표:** 외부 의존성 없이 동작 가능한 단일 산출물 웹앱\n\n## 2. 작업 규칙\n- 모든 변경은 **설계 → 테스트 작성 → 구현 → 검증** 순서로 진행\n- 한 번에 하나의 이슈만 해결하고, 테스트 통과 확인 후 `git commit`, 그다음 아이템으로 진행\n- 작업 완료 후 `history.html`에 한글로 이력 기록 (최신 항목을 첫 `<h2>` 위에 추가)\n- `readme.md`는 한글로 유지\n- 관리 에이전트가 개발·검증·디자인 에이전트를 관리\n- 에이전트 간 통신은 영어로 한다\n- 작업 완료 후 GitHub에 푸시\n\n## 3. 실행/빌드 제약\n- 실행 시 외부 라이브러리 참조가 있으면 안 됨 (CDN, 외부 폰트 포함 금지)\n- HTML5 표준 기반으로 구현\n- `python -m http.server 8001` 로 동작 가능해야 함\n- 브라우저 기본 지원 폰트만 사용\n\n## 4. 이미지·사운드 리소스\n- 이모지를 최대한 활용\n- 인터넷 무료 이미지 리소스 사용 시 출처 표기\n- 인터넷 무료 오디오 리소스 사용 시 출처 표기\n- 오디오 리소스는 base64로 변환하여 JS에 포함시킬 것\n\n## 5. 코딩 규칙 (Coding Rules)\n- 모든 코드는 모듈화하여 작성\n- 변수·함수명은 `camelCase`, 클래스명은 `PascalCase` 사용\n- 주석은 코드의 의도를 명확히 설명할 것\n- 성능에 미치는 영향을 고려하여 최적화된 코드를 작성\n- 코드를 수정하기 전에 `test` 폴더의 기존 로직을 확인하라\n\n## 6. 저장 메커니즘 (DB & Store)\n- **DB:** 브라우저 IndexedDB 사용\n- 데이터는 JSON 형식으로 저장·불러오기 가능\n- 내부 DB를 통해 여러 작업물을 저장 및 불러오기 가능\n- 모든 DB 내용을 하나의 JSON으로 다운로드 및 등록(가져오기) 가능\n- 내부 DB에 저장된 작업물의 삭제·이름 변경·불러오기 가능\n- 사용자의 진행 상황은 IndexedDB에 저장되어 **작업 이어하기** 지원\n- 데이터 형식(JSON)은 수정과 추가가 쉬워야 함\n- DB 손상·오류 상황에서도 앱이 동작해야 함\n\n## 7. 지원 환경 (Targets)\n- PC 브라우저 동작 가능\n- 모바일 터치 UI 지원\n- 폴더블 기기의 펼침 화면·접힘 화면 모두 지원\n- 갤럭시 폴드7 펼침 화면에서 고해상도로 보이도록 할 것\n\n## 8. 기능 목표 (Goals)\n- 한글·영어 다국어 지원\n- 브라우저가 지원하는 기본 폰트만 사용\n- 두 손가락 확대·축소(pinch zoom) 지원\n- {%목표%3}\n- {%목표%1}\n- {%목표%2}\n\n## 9. 마무리 (Build & Release)\n- 빌드 시 `index.html` 하나의 산출물로 나오도록 할 것\n- 실행에 필요한 파일만 `release` 폴더로 복사하는 `build.sh`(POSIX) 작성\n- 실행에 필요한 파일만 `release` 폴더로 복사하는 Windows용 `build.bat` 작성\n- Windows용 `build.bat`는 한글이 깨지지 않도록 cp949 사용\n- 인터넷 검색하여 좋은 아이디어가 있으면 추가할 것\n";</script>
+  <script>window.__DEFAULT_TEMPLATE__ = "# 프로젝트 가이드라인 (CLAUDE.md)\n\n## 0. 기본 원칙\n- 사용하지 않는 코드나 에셋은 즉시 삭제하라.\n- **금지:** `global` 변수 사용, 하드코딩된 좌표 값\n- 내부 동작의 기본 언어(코드, 식별자, 주석 의도)는 영어로 할 것\n- 사용자 대상 응답 및 문서(readme, history)는 한글로 작성할 것\n\n## 1. 개요\n- **목적:** {%언어1%} 기반의 {%제목%} 앱\n- **엔진/언어:** {%언어2%}\n- **핵심 목표:** 외부 의존성 없이 동작 가능한 단일 산출물 웹앱\n\n## 2. 작업 규칙\n- 모든 변경은 **설계 → 테스트 작성 → 구현 → 검증** 순서로 진행\n- 한 번에 하나의 이슈만 해결하고, 테스트 통과 확인 후 `git commit`, 그다음 아이템으로 진행\n- 작업 완료 후 `history.html`에 한글로 이력 기록 (최신 항목을 첫 `<h2>` 위에 추가)\n- `readme.md`는 한글로 유지\n- 관리 에이전트가 개발·검증·디자인 에이전트를 관리\n- 에이전트 간 통신은 영어로 한다\n- 작업 완료 후 GitHub에 푸시\n\n## 3. 실행/빌드 제약\n- 실행 시 외부 라이브러리 참조가 있으면 안 됨 (CDN, 외부 폰트 포함 금지)\n- HTML5 표준 기반으로 구현\n- `python -m http.server 8001` 로 동작 가능해야 함\n- 브라우저 기본 지원 폰트만 사용\n\n## 4. 이미지·사운드 리소스\n- 이모지를 최대한 활용\n- 인터넷 무료 이미지 리소스 사용 시 출처 표기\n- 인터넷 무료 오디오 리소스 사용 시 출처 표기\n- 오디오 리소스는 base64로 변환하여 JS에 포함시킬 것\n\n## 5. 코딩 규칙 (Coding Rules)\n- 모든 코드는 모듈화하여 작성\n- 변수·함수명은 `camelCase`, 클래스명은 `PascalCase` 사용\n- 주석은 코드의 의도를 명확히 설명할 것\n- 성능에 미치는 영향을 고려하여 최적화된 코드를 작성\n- 코드를 수정하기 전에 `test` 폴더의 기존 로직을 확인하라\n\n## 6. 저장 메커니즘 (DB & Store)\n- **DB:** 브라우저 IndexedDB 사용\n- 데이터는 JSON 형식으로 저장·불러오기 가능\n- 내부 DB를 통해 여러 작업물을 저장 및 불러오기 가능\n- 모든 DB 내용을 하나의 JSON으로 다운로드 및 등록(가져오기) 가능\n- 내부 DB에 저장된 작업물의 삭제·이름 변경·불러오기 가능\n- 사용자의 진행 상황은 IndexedDB에 저장되어 **작업 이어하기** 지원\n- 데이터 형식(JSON)은 수정과 추가가 쉬워야 함\n- DB 손상·오류 상황에서도 앱이 동작해야 함\n\n## 7. 지원 환경 (Targets)\n- PC 브라우저 동작 가능\n- 모바일 터치 UI 지원\n- 폴더블 기기의 펼침 화면·접힘 화면 모두 지원\n- 갤럭시 폴드7 펼침 화면에서 고해상도로 보이도록 할 것\n\n## 8. 기능 목표 (Goals)\n- 한글·영어 다국어 지원\n- 브라우저가 지원하는 기본 폰트만 사용\n- {%목표%1}\n- {%목표%2}\n- {%목표%3}\n\n## 9. 마무리 (Build & Release)\n- 빌드 시 `index.html` 하나의 산출물로 나오도록 할 것\n- 실행에 필요한 파일만 `release` 폴더로 복사하는 `build.sh`(POSIX) 작성\n- 실행에 필요한 파일만 `release` 폴더로 복사하는 Windows용 `build.bat` 작성\n- Windows용 `build.bat`는 한글이 깨지지 않도록 cp949 사용\n- 인터넷 검색하여 좋은 아이디어가 있으면 추가할 것\n";</script>
   <script>"use strict";
 /// <reference path="types.ts" />
 /** UI string table and tiny translation helper. */
@@ -353,34 +344,19 @@ var App;
             inputs: { ko: "입력 값", en: "Inputs" },
             preview: { ko: "미리보기", en: "Preview" },
             template: { ko: "템플릿", en: "Template" },
-            editTemplate: { ko: "템플릿 편집", en: "Edit template" },
-            loadTemplateFile: { ko: "템플릿 파일 불러오기", en: "Load template file" },
-            resetTemplate: { ko: "기본 템플릿으로", en: "Reset template" },
-            library: { ko: "저장된 작업물", en: "Saved works" },
-            workName: { ko: "작업물 이름", en: "Work name" },
-            save: { ko: "저장", en: "Save" },
-            saveAsNew: { ko: "새로 저장", en: "Save as new" },
-            load: { ko: "불러오기", en: "Load" },
-            rename: { ko: "이름 변경", en: "Rename" },
-            remove: { ko: "삭제", en: "Delete" },
-            newWork: { ko: "새 작업", en: "New" },
-            exportAll: { ko: "전체 내보내기(JSON)", en: "Export all (JSON)" },
-            importAll: { ko: "가져오기(JSON)", en: "Import (JSON)" },
+            reset: { ko: "초기화", en: "Reset" },
             copy: { ko: "복사", en: "Copy" },
-            download: { ko: "CLAUDE.md 다운로드", en: "Download CLAUDE.md" },
+            save: { ko: "CLAUDE.md 저장", en: "Save CLAUDE.md" },
             copied: { ko: "복사되었습니다", en: "Copied" },
-            saved: { ko: "저장되었습니다", en: "Saved" },
-            deleted: { ko: "삭제되었습니다", en: "Deleted" },
-            loaded: { ko: "불러왔습니다", en: "Loaded" },
-            imported: { ko: "가져왔습니다", en: "Imported" },
-            confirmDelete: { ko: "정말 삭제할까요?", en: "Delete this work?" },
-            promptName: { ko: "작업물 이름을 입력하세요", en: "Enter a work name" },
-            promptRename: { ko: "새 이름을 입력하세요", en: "Enter a new name" },
-            noWorks: { ko: "저장된 작업물이 없습니다", en: "No saved works yet" },
+            downloaded: { ko: "CLAUDE.md를 저장했습니다", en: "Saved CLAUDE.md" },
+            needTitle: { ko: "프로젝트 제목을 입력하세요", en: "Enter a project title first" },
+            confirmReset: {
+                ko: "입력값과 템플릿을 기본값으로 되돌릴까요?",
+                en: "Reset inputs and template to defaults?",
+            },
             remaining: { ko: "남은 항목", en: "Remaining" },
             complete: { ko: "모든 항목 작성 완료", en: "All fields complete" },
             fontSize: { ko: "글자 크기", en: "Font size" },
-            theme: { ko: "테마", en: "Theme" },
             zoomHint: {
                 ko: "두 손가락으로 확대/축소할 수 있습니다",
                 en: "Pinch with two fingers to zoom",
@@ -390,7 +366,6 @@ var App;
                 en: "Storage unavailable; using in-memory fallback",
             },
             restored: { ko: "이전 작업을 이어합니다", en: "Restored previous session" },
-            untitled: { ko: "제목 없음", en: "Untitled" },
         };
         let current = "ko";
         function setLang(lang) {
@@ -484,9 +459,9 @@ var App;
 })(App || (App = {}));
 /// <reference path="types.ts" />
 /**
- * IndexedDB-backed store for saved works plus a single auto-saved session.
- * Degrades gracefully to an in-memory map when IndexedDB is missing or broken,
- * so the app keeps working even if the database is corrupted (CLAUDE.md §6).
+ * IndexedDB-backed store for the single auto-saved session ("작업 이어하기").
+ * Degrades gracefully to an in-memory value when IndexedDB is missing or broken,
+ * so the app keeps working even if the database is unavailable (CLAUDE.md §6).
  */
 var App;
 (function (App) {
@@ -494,13 +469,11 @@ var App;
     (function (DB) {
         const DB_NAME = "claude_md_generator";
         const DB_VERSION = 1;
-        const STORE_WORKS = "works";
         const STORE_SESSION = "session";
         const SESSION_KEY = "current";
         let dbHandle = null;
         let useMemory = false;
         // In-memory fallback storage.
-        const memWorks = new Map();
         let memSession = null;
         function isMemoryMode() {
             return useMemory;
@@ -525,9 +498,6 @@ var App;
                 }
                 req.onupgradeneeded = () => {
                     const db = req.result;
-                    if (!db.objectStoreNames.contains(STORE_WORKS)) {
-                        db.createObjectStore(STORE_WORKS, { keyPath: "id" });
-                    }
                     if (!db.objectStoreNames.contains(STORE_SESSION)) {
                         db.createObjectStore(STORE_SESSION);
                     }
@@ -543,81 +513,12 @@ var App;
             });
         }
         DB.open = open;
-        function tx(store, mode) {
-            const db = dbHandle;
-            return db.transaction(store, mode).objectStore(store);
-        }
         function wrap(request) {
             return new Promise((resolve, reject) => {
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
             });
         }
-        async function saveWork(rec) {
-            if (useMemory) {
-                memWorks.set(rec.id, rec);
-                return;
-            }
-            try {
-                await wrap(tx(STORE_WORKS, "readwrite").put(rec));
-            }
-            catch {
-                memWorks.set(rec.id, rec);
-            }
-        }
-        DB.saveWork = saveWork;
-        async function listWorks() {
-            if (useMemory) {
-                return [...memWorks.values()].sort((a, b) => b.updatedAt - a.updatedAt);
-            }
-            try {
-                const all = await wrap(tx(STORE_WORKS, "readonly").getAll());
-                return all.sort((a, b) => b.updatedAt - a.updatedAt);
-            }
-            catch {
-                return [...memWorks.values()].sort((a, b) => b.updatedAt - a.updatedAt);
-            }
-        }
-        DB.listWorks = listWorks;
-        async function getWork(id) {
-            if (useMemory) {
-                return memWorks.get(id);
-            }
-            try {
-                return await wrap(tx(STORE_WORKS, "readonly").get(id));
-            }
-            catch {
-                return memWorks.get(id);
-            }
-        }
-        DB.getWork = getWork;
-        async function deleteWork(id) {
-            if (useMemory) {
-                memWorks.delete(id);
-                return;
-            }
-            try {
-                await wrap(tx(STORE_WORKS, "readwrite").delete(id));
-            }
-            catch {
-                memWorks.delete(id);
-            }
-        }
-        DB.deleteWork = deleteWork;
-        async function replaceAll(records) {
-            if (useMemory) {
-                records.forEach((r) => memWorks.set(r.id, r));
-                return;
-            }
-            try {
-                const store = tx(STORE_WORKS, "readwrite");
-                await Promise.all(records.map((r) => wrap(store.put(r))));
-            }
-            catch {
-                records.forEach((r) => memWorks.set(r.id, r));
-            }
-        }
-        DB.replaceAll = replaceAll;
         /** Persist the in-progress session so work can be resumed (CLAUDE.md §6). */
         async function saveSession(rec) {
             if (useMemory) {
@@ -625,7 +526,8 @@ var App;
                 return;
             }
             try {
-                await wrap(tx(STORE_SESSION, "readwrite").put(rec, SESSION_KEY));
+                const db = dbHandle;
+                await wrap(db.transaction(STORE_SESSION, "readwrite").objectStore(STORE_SESSION).put(rec, SESSION_KEY));
             }
             catch {
                 memSession = rec;
@@ -637,7 +539,8 @@ var App;
                 return memSession;
             }
             try {
-                const r = await wrap(tx(STORE_SESSION, "readonly").get(SESSION_KEY));
+                const db = dbHandle;
+                const r = await wrap(db.transaction(STORE_SESSION, "readonly").objectStore(STORE_SESSION).get(SESSION_KEY));
                 return r !== null && r !== void 0 ? r : null;
             }
             catch {
@@ -772,11 +675,16 @@ var App;
     (function (Main) {
         const T = App.TemplateEngine;
         const U = App.UI;
+        // Seed values applied when the user has not typed anything (CLAUDE.md request).
+        const DEFAULT_VALUES = {
+            "언어1": "HTML5",
+            "언어2": "TypeScript",
+        };
+        // Placeholder key that gates saving: an empty title disables the save button.
+        const TITLE_KEY = "제목";
         const state = {
             templateText: "",
             values: {},
-            currentId: null,
-            name: "",
         };
         let rawOutput = "";
         let autosaveTimer = 0;
@@ -784,12 +692,14 @@ var App;
         function defaultTemplate() {
             return typeof __DEFAULT_TEMPLATE__ === "string" ? __DEFAULT_TEMPLATE__ : "";
         }
+        function seededDefaults() {
+            return { ...DEFAULT_VALUES };
+        }
         // --- persistence ---------------------------------------------------------
         function snapshot() {
-            var _a;
             return {
-                id: (_a = state.currentId) !== null && _a !== void 0 ? _a : "session",
-                name: state.name || App.I18n.t("untitled"),
+                id: "session",
+                name: "",
                 templateText: state.templateText,
                 values: state.values,
                 updatedAt: Date.now(),
@@ -811,10 +721,10 @@ var App;
                     node.textContent = App.I18n.t(key);
                 }
             });
-            document.querySelectorAll("[data-i18n-ph]").forEach((node) => {
-                const key = node.getAttribute("data-i18n-ph");
+            document.querySelectorAll("[data-i18n-title]").forEach((node) => {
+                const key = node.getAttribute("data-i18n-title");
                 if (key) {
-                    node.placeholder = App.I18n.t(key);
+                    node.title = App.I18n.t(key);
                 }
             });
             document.documentElement.lang = App.I18n.getLang();
@@ -836,6 +746,12 @@ var App;
                 wrap.className = "field";
                 const label = document.createElement("label");
                 label.textContent = T.labelOf(p);
+                if (p.key === TITLE_KEY) {
+                    const req = document.createElement("span");
+                    req.className = "req";
+                    req.textContent = " *";
+                    label.appendChild(req);
+                }
                 const hint = document.createElement("span");
                 hint.className = "field-token";
                 hint.textContent = p.raw;
@@ -850,6 +766,7 @@ var App;
                     autoGrow(input);
                     updatePreview();
                     updateStatus();
+                    updateSaveState();
                     scheduleAutosave();
                 });
                 wrap.appendChild(label);
@@ -877,168 +794,22 @@ var App;
                 status.className = "status";
             }
         }
-        async function renderLibrary() {
-            const list = U.$("#worksList");
-            list.innerHTML = "";
-            const works = await App.DB.listWorks();
-            if (works.length === 0) {
-                const empty = document.createElement("p");
-                empty.className = "muted";
-                empty.setAttribute("data-i18n", "noWorks");
-                empty.textContent = App.I18n.t("noWorks");
-                list.appendChild(empty);
-                return;
+        /** A non-empty project title is required before CLAUDE.md can be saved. */
+        function titleSatisfied() {
+            const hasTitle = T.parsePlaceholders(state.templateText).some((p) => p.key === TITLE_KEY);
+            if (!hasTitle) {
+                return true;
             }
-            works.forEach((w) => list.appendChild(workRow(w)));
+            const v = state.values[TITLE_KEY];
+            return v !== undefined && v.trim() !== "";
         }
-        function workRow(w) {
-            const row = document.createElement("div");
-            row.className = "work-row" + (w.id === state.currentId ? " active" : "");
-            const name = document.createElement("span");
-            name.className = "work-name";
-            name.textContent = w.name;
-            row.appendChild(name);
-            const actions = document.createElement("div");
-            actions.className = "work-actions";
-            actions.appendChild(iconBtn(App.I18n.t("load"), "📂", () => void loadWork(w.id)));
-            actions.appendChild(iconBtn(App.I18n.t("rename"), "✏️", () => void renameWork(w)));
-            actions.appendChild(iconBtn(App.I18n.t("remove"), "🗑️", () => void deleteWork(w)));
-            row.appendChild(actions);
-            return row;
-        }
-        function iconBtn(title, glyph, onClick) {
-            const b = document.createElement("button");
-            b.className = "icon-btn";
-            b.type = "button";
-            b.title = title;
-            b.textContent = glyph;
-            b.addEventListener("click", onClick);
-            return b;
+        function updateSaveState() {
+            const btn = U.$("#downloadBtn");
+            const ok = titleSatisfied();
+            btn.disabled = !ok;
+            btn.title = ok ? App.I18n.t("save") : App.I18n.t("needTitle");
         }
         // --- actions -------------------------------------------------------------
-        async function loadWork(id) {
-            const w = await App.DB.getWork(id);
-            if (!w) {
-                return;
-            }
-            state.currentId = w.id;
-            state.name = w.name;
-            state.templateText = w.templateText;
-            state.values = { ...w.values };
-            U.$("#workName").value = w.name;
-            U.$("#templateText").value = w.templateText;
-            renderFields();
-            updatePreview();
-            updateStatus();
-            await renderLibrary();
-            scheduleAutosave();
-            U.toast(App.I18n.t("loaded"));
-        }
-        async function renameWork(w) {
-            const next = window.prompt(App.I18n.t("promptRename"), w.name);
-            if (next === null) {
-                return;
-            }
-            const trimmed = next.trim() || App.I18n.t("untitled");
-            await App.DB.saveWork({ ...w, name: trimmed, updatedAt: Date.now() });
-            if (state.currentId === w.id) {
-                state.name = trimmed;
-                U.$("#workName").value = trimmed;
-            }
-            await renderLibrary();
-        }
-        async function deleteWork(w) {
-            if (!window.confirm(App.I18n.t("confirmDelete"))) {
-                return;
-            }
-            await App.DB.deleteWork(w.id);
-            if (state.currentId === w.id) {
-                state.currentId = null;
-            }
-            await renderLibrary();
-            U.toast(App.I18n.t("deleted"));
-        }
-        async function save(asNew) {
-            const nameInput = U.$("#workName");
-            let name = nameInput.value.trim();
-            if (!name) {
-                const entered = window.prompt(App.I18n.t("promptName"), "");
-                if (entered === null) {
-                    return;
-                }
-                name = entered.trim() || App.I18n.t("untitled");
-                nameInput.value = name;
-            }
-            state.name = name;
-            if (asNew || !state.currentId) {
-                state.currentId = U.genId();
-            }
-            await App.DB.saveWork({
-                id: state.currentId,
-                name,
-                templateText: state.templateText,
-                values: state.values,
-                updatedAt: Date.now(),
-            });
-            await renderLibrary();
-            U.toast(App.I18n.t("saved"));
-        }
-        function newWork() {
-            state.currentId = null;
-            state.name = "";
-            state.templateText = defaultTemplate();
-            state.values = {};
-            U.$("#workName").value = "";
-            U.$("#templateText").value = state.templateText;
-            renderFields();
-            updatePreview();
-            updateStatus();
-            void renderLibrary();
-            scheduleAutosave();
-        }
-        async function exportAll() {
-            const works = await App.DB.listWorks();
-            const payload = JSON.stringify({ version: 1, works }, null, 2);
-            downloadText("work_generator_backup.json", payload, "application/json");
-        }
-        function importAll(file) {
-            const reader = new FileReader();
-            reader.onload = async () => {
-                try {
-                    const parsed = JSON.parse(String(reader.result));
-                    const works = Array.isArray(parsed.works) ? parsed.works : [];
-                    const valid = works.filter((w) => w && typeof w.id === "string" && typeof w.templateText === "string");
-                    await App.DB.replaceAll(valid);
-                    await renderLibrary();
-                    U.toast(App.I18n.t("imported"));
-                }
-                catch {
-                    U.toast("JSON error");
-                }
-            };
-            reader.readAsText(file);
-        }
-        function loadTemplateFile(file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                state.templateText = String(reader.result);
-                U.$("#templateText").value = state.templateText;
-                renderFields();
-                updatePreview();
-                updateStatus();
-                scheduleAutosave();
-            };
-            reader.readAsText(file);
-        }
-        function downloadText(filename, text, mime) {
-            const blob = new Blob([text], { type: mime + ";charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = filename;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
         function copyOutput() {
             const done = () => U.toast(App.I18n.t("copied"));
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1062,6 +833,43 @@ var App;
             finally {
                 document.body.removeChild(ta);
             }
+        }
+        function downloadOutput() {
+            if (!titleSatisfied()) {
+                U.toast(App.I18n.t("needTitle"));
+                return;
+            }
+            const blob = new Blob([rawOutput], { type: "text/markdown;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "CLAUDE.md";
+            a.click();
+            URL.revokeObjectURL(url);
+            U.toast(App.I18n.t("downloaded"));
+        }
+        function resetAll() {
+            if (!window.confirm(App.I18n.t("confirmReset"))) {
+                return;
+            }
+            state.templateText = defaultTemplate();
+            state.values = seededDefaults();
+            U.$("#templateText").value = state.templateText;
+            renderFields();
+            updatePreview();
+            updateStatus();
+            updateSaveState();
+            setView("preview");
+            scheduleAutosave();
+        }
+        // --- view switching (preview / template) ---------------------------------
+        function setView(view) {
+            const showTemplate = view === "template";
+            U.$("#previewWrap").hidden = showTemplate;
+            U.$("#templateText").hidden = !showTemplate;
+            document.querySelectorAll(".tab").forEach((b) => {
+                b.classList.toggle("active", b.getAttribute("data-view") === view);
+            });
         }
         // --- zoom / appearance ---------------------------------------------------
         function setPreviewScale(scale) {
@@ -1088,6 +896,7 @@ var App;
                     return;
                 }
                 pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                // Only intercept when two fingers are down; one finger scrolls normally.
                 if (pointers.size === 2 && startDist > 0) {
                     const pts = [...pointers.values()];
                     const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
@@ -1115,7 +924,7 @@ var App;
             App.I18n.setLang(lang);
             applyStaticLabels();
             updateStatus();
-            void renderLibrary();
+            updateSaveState();
             document.querySelectorAll(".lang-btn").forEach((b) => {
                 b.classList.toggle("active", b.getAttribute("data-lang") === lang);
             });
@@ -1125,46 +934,20 @@ var App;
         }
         // --- wiring --------------------------------------------------------------
         function wireEvents() {
-            U.$("#saveBtn").addEventListener("click", () => void save(false));
-            U.$("#saveAsNewBtn").addEventListener("click", () => void save(true));
-            U.$("#newBtn").addEventListener("click", () => newWork());
             U.$("#copyBtn").addEventListener("click", () => copyOutput());
-            U.$("#downloadBtn").addEventListener("click", () => downloadText("CLAUDE.md", rawOutput, "text/markdown"));
-            U.$("#exportBtn").addEventListener("click", () => void exportAll());
-            const importFile = U.$("#importFile");
-            U.$("#importBtn").addEventListener("click", () => importFile.click());
-            importFile.addEventListener("change", () => {
-                if (importFile.files && importFile.files[0]) {
-                    importAll(importFile.files[0]);
-                    importFile.value = "";
-                }
-            });
-            const tplFile = U.$("#templateFile");
-            U.$("#loadTemplateBtn").addEventListener("click", () => tplFile.click());
-            tplFile.addEventListener("change", () => {
-                if (tplFile.files && tplFile.files[0]) {
-                    loadTemplateFile(tplFile.files[0]);
-                    tplFile.value = "";
-                }
-            });
-            U.$("#resetTemplateBtn").addEventListener("click", () => {
-                state.templateText = defaultTemplate();
-                U.$("#templateText").value = state.templateText;
-                renderFields();
-                updatePreview();
-                updateStatus();
-                scheduleAutosave();
-            });
+            U.$("#downloadBtn").addEventListener("click", () => downloadOutput());
+            U.$("#resetBtn").addEventListener("click", () => resetAll());
             const tplArea = U.$("#templateText");
             tplArea.addEventListener("input", () => {
                 state.templateText = tplArea.value;
                 renderFields();
                 updatePreview();
                 updateStatus();
+                updateSaveState();
                 scheduleAutosave();
             });
-            U.$("#toggleTemplate").addEventListener("click", () => {
-                U.$("#templatePanel").classList.toggle("open");
+            document.querySelectorAll(".tab").forEach((b) => {
+                b.addEventListener("click", () => setView(b.getAttribute("data-view")));
             });
             document.querySelectorAll(".lang-btn").forEach((b) => {
                 b.addEventListener("click", () => setLang(b.getAttribute("data-lang")));
@@ -1174,8 +957,7 @@ var App;
                 U.$("#preview").style.fontSize = fontRange.value + "px";
             });
             U.$("#themeToggle").addEventListener("click", () => {
-                const dark = !document.body.classList.contains("dark");
-                setTheme(dark);
+                setTheme(!document.body.classList.contains("dark"));
             });
             enablePinchZoom();
         }
@@ -1188,18 +970,18 @@ var App;
             if (session && session.templateText) {
                 state.templateText = session.templateText;
                 state.values = { ...session.values };
-                state.name = session.name === App.I18n.t("untitled") ? "" : session.name;
                 U.toast(App.I18n.t("restored"));
             }
             else {
                 state.templateText = defaultTemplate();
+                state.values = seededDefaults();
             }
             U.$("#templateText").value = state.templateText;
-            U.$("#workName").value = state.name;
             renderFields();
             updatePreview();
             updateStatus();
-            await renderLibrary();
+            updateSaveState();
+            setView("preview");
             if (App.DB.isMemoryMode()) {
                 const notice = U.$("#dbNotice");
                 notice.textContent = App.I18n.t("dbUnavailable");

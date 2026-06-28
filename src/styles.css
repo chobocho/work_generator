@@ -71,10 +71,10 @@ header.app-bar {
 /* --- layout --- */
 main {
   display: grid;
-  grid-template-columns: 1fr 1fr 320px;
+  grid-template-columns: minmax(280px, 1fr) minmax(0, 1.4fr);
   gap: 16px;
   padding: 16px;
-  max-width: 1700px;
+  max-width: 1500px;
   margin: 0 auto;
 }
 .panel {
@@ -104,6 +104,7 @@ main {
   margin-left: 6px;
   font-family: ui-monospace, "Consolas", monospace;
 }
+.field label .req { color: #dc2626; font-weight: 700; }
 textarea, input[type="text"] {
   width: 100%;
   border: 1px solid var(--line);
@@ -137,17 +138,49 @@ button {
 .icon-btn {
   border: 1px solid var(--line);
   background: var(--panel);
+  color: var(--ink);
   border-radius: 8px;
-  padding: 4px 8px;
-  font-size: 0.95rem;
+  padding: 6px 10px;
+  font-size: 1.05rem;
   line-height: 1;
 }
+.icon-btn:hover { filter: brightness(0.97); }
+.icon-btn.save { background: var(--accent); border-color: var(--accent); }
+button:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
 
-/* --- template panel (collapsible) --- */
-.template-panel { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 12px; }
-.template-panel .body { display: none; }
-.template-panel.open .body { display: block; }
-.template-panel textarea { min-height: 200px; font-family: ui-monospace, "Consolas", monospace; font-size: 0.8rem; }
+/* --- preview header (tabs + tools) --- */
+.preview-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.tabs { display: flex; gap: 4px; }
+.tab {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.tab.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.preview-tools { margin-left: auto; display: flex; gap: 6px; }
+
+/* --- inline template editor --- */
+.template-edit {
+  width: 100%;
+  min-height: 60vh;
+  max-height: 70vh;
+  overflow: auto;
+  font-family: ui-monospace, "Consolas", monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.template-edit[hidden] { display: none; }
 
 /* --- preview --- */
 .preview-wrap {
@@ -157,7 +190,10 @@ button {
   padding: 14px;
   overflow: auto;
   max-height: 70vh;
-  touch-action: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  /* Allow one-finger pan/scroll; two-finger pinch is handled in JS. */
+  touch-action: pan-x pan-y;
 }
 .preview {
   font-size: 15px;
@@ -182,21 +218,6 @@ button {
 .preview pre code { background: none; padding: 0; }
 .preview ul { padding-left: 22px; }
 .preview p { margin: 8px 0; }
-
-/* --- library --- */
-.work-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  margin-bottom: 8px;
-}
-.work-row.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
-.work-name { flex: 1 1 auto; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.work-actions { display: flex; gap: 4px; }
-#worksList { margin: 12px 0; max-height: 40vh; overflow: auto; }
 
 .muted { color: var(--muted); font-size: 0.85rem; }
 .notice {
@@ -231,10 +252,6 @@ button {
 footer { text-align: center; color: var(--muted); font-size: 0.78rem; padding: 12px; }
 
 /* --- responsive: tablet / folded --- */
-@media (max-width: 1100px) {
-  main { grid-template-columns: 1fr 1fr; }
-  .panel.library { grid-column: 1 / -1; }
-}
 @media (max-width: 720px) {
   main { grid-template-columns: 1fr; }
   .app-bar h1 { font-size: 1rem; }
@@ -243,5 +260,5 @@ footer { text-align: center; color: var(--muted); font-size: 0.78rem; padding: 1
 /* --- high-resolution unfolded (e.g. Galaxy Fold7 main screen) --- */
 @media (min-width: 1800px) {
   body { font-size: 18px; }
-  main { max-width: 2200px; grid-template-columns: 1fr 1fr 380px; }
+  main { max-width: 2000px; }
 }
