@@ -54,16 +54,13 @@ html = inject(html, "/*INLINE_JS*/", js);
 writeFileSync(join(root, "index.html"), html, "utf8");
 console.log("Wrote index.html (" + html.length + " bytes)");
 
-// 4) Copy ONLY the runtime artifact(s) into release/ (CLAUDE.md §9).
-//    The app is a single self-contained file, so index.html is all that runs.
+// 4) Copy ONLY the runtime artifact into release/ (CLAUDE.md §9).
+//    The app is a single self-contained file; release ships it as workoder.html.
+const RELEASE_NAME = "workoder.html";
 const releaseDir = join(root, "release");
 if (!existsSync(releaseDir)) {
   mkdirSync(releaseDir, { recursive: true });
 }
-for (const file of ["index.html"]) {
-  if (existsSync(join(root, file))) {
-    copyFileSync(join(root, file), join(releaseDir, file));
-    console.log("Copied -> release/" + file);
-  }
-}
+copyFileSync(join(root, "index.html"), join(releaseDir, RELEASE_NAME));
+console.log("Copied -> release/" + RELEASE_NAME);
 console.log("Build complete.");
