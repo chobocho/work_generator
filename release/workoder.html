@@ -327,7 +327,7 @@ footer { text-align: center; color: var(--muted); font-size: 0.78rem; padding: 1
 
   <div id="toast"></div>
 
-  <script>window.__DEFAULT_TEMPLATE__ = "# 프로젝트 가이드라인 (CLAUDE.md)\n\n## 0. 기본 원칙\n- 사용하지 않는 코드나 에셋은 즉시 삭제하라.\n- **금지:** `global` 변수 사용, 하드코딩된 좌표 값\n- 내부 동작의 기본 언어(코드, 식별자, 주석 의도)는 영어로 할 것\n- 사용자 대상 응답 및 문서(readme, history)는 한글로 작성할 것\n\n## 1. 개요\n- **목적:** {%언어1%} 기반의 {%제목%} 앱\n- **엔진/언어:** {%언어2%}\n- **핵심 목표:** 외부 의존성 없이 동작 가능한 단일 산출물 웹앱\n\n## 2. 작업 규칙\n- 모든 변경은 **설계 → 테스트 작성 → 구현 → 검증** 순서로 진행\n- 한 번에 하나의 이슈만 해결하고, 테스트 통과 확인 후 `git commit`, 그다음 아이템으로 진행\n- 작업 완료 후 `history.html`에 한글로 이력 기록 (최신 항목을 첫 `<h2>` 위에 추가)\n- `readme.md`는 한글로 유지\n- 관리 에이전트가 개발·검증·디자인 에이전트를 관리\n- 에이전트 간 통신은 영어로 한다\n- 작업 완료 후 GitHub에 푸시\n\n## 3. 실행/빌드 제약\n- 실행 시 외부 라이브러리 참조가 있으면 안 됨 (CDN, 외부 폰트 포함 금지)\n- HTML5 표준 기반으로 구현\n- `python -m http.server 8001` 로 동작 가능해야 함\n- 브라우저 기본 지원 폰트만 사용\n\n## 4. 이미지·사운드 리소스\n- 이모지를 최대한 활용\n- 인터넷 무료 이미지 리소스 사용 시 출처 표기\n- 인터넷 무료 오디오 리소스 사용 시 출처 표기\n- 오디오 리소스는 base64로 변환하여 JS에 포함시킬 것\n\n## 5. 코딩 규칙 (Coding Rules)\n- 모든 코드는 모듈화하여 작성\n- 변수·함수명은 `camelCase`, 클래스명은 `PascalCase` 사용\n- 주석은 코드의 의도를 명확히 설명할 것\n- 성능에 미치는 영향을 고려하여 최적화된 코드를 작성\n- 코드를 수정하기 전에 `test` 폴더의 기존 로직을 확인하라\n\n## 6. 저장 메커니즘 (DB & Store)\n- **DB:** 브라우저 IndexedDB 사용\n- 데이터는 JSON 형식으로 저장·불러오기 가능\n- 내부 DB를 통해 여러 작업물을 저장 및 불러오기 가능\n- 구조상 필요하다면 모든 DB 내용을 하나의 JSON으로 다운로드 및 등록(가져오기) 가능\n- 구조상 필요하다면 내부 DB에 저장된 작업물의 삭제·이름 변경·불러오기 가능\n- 사용자의 진행 상황은 IndexedDB에 저장되어 **작업 이어하기** 지원\n- 데이터 형식(JSON)은 수정과 추가가 쉬워야 함\n- DB 손상·오류 상황에서도 앱이 동작해야 함\n\n## 7. 지원 환경 (Targets)\n- PC 브라우저 동작 가능\n- 모바일 터치 UI 지원\n- 폴더블 기기의 펼침 화면·접힘 화면 모두 지원\n- 갤럭시 폴드7 펼침 화면에서 고해상도로 보이도록 할 것\n\n## 8. 기능 목표 (Goals)\n- 한글·영어 다국어 지원\n- 브라우저가 지원하는 기본 폰트만 사용\n- {%목표%1}\n- {%목표%2}\n- {%목표%3}\n\n## 9. 마무리 (Build & Release)\n- 빌드 시 `index.html` 하나의 산출물로 나오도록 할 것\n- 실행에 필요한 파일만 `release` 폴더로 복사하는 `build.sh`(POSIX) 작성\n- 실행에 필요한 파일만 `release` 폴더로 복사하는 Windows용 `build.bat` 작성\n- Windows용 `build.bat`는 한글이 깨지지 않도록 cp949 사용\n- 인터넷 검색하여 좋은 아이디어가 있으면 추가할 것\n";</script>
+  <script>window.__DEFAULT_TEMPLATE__ = "# 프로젝트 가이드라인 (CLAUDE.md)\n\n## 0. 기본 원칙\n- 사용하지 않는 코드나 에셋은 즉시 삭제하라.\n- **금지:** `global` 변수 사용, 하드코딩된 좌표 값\n- 내부 동작의 기본 언어(코드, 식별자, 주석 의도)는 영어로 할 것\n- 사용자 대상 응답 및 문서(readme, history)는 한글로 작성할 것\n\n## 1. 개요\n- **목적:** {%언어1%} 기반의 {%제목%} 앱\n- **엔진/언어:** {%언어2%}\n- **핵심 목표:** 외부 의존성 없이 동작 가능한 단일 산출물 웹앱\n\n## 2. 작업 규칙\n- 모든 변경은 **설계 → 테스트 작성 → 구현 → 검증** 순서로 진행\n- 한 번에 하나의 이슈만 해결하고, 테스트 통과 확인 후 `git commit`, 그다음 아이템으로 진행\n- 작업 완료 후 `history.html`에 한글로 이력 기록 (최신 항목을 첫 `<h2>` 위에 추가)\n- `readme.md`는 한글로 유지\n- 관리 에이전트가 개발·검증·디자인 에이전트를 관리\n- 에이전트 간 통신은 영어로 한다\n- 작업 완료 후 GitHub에 푸시\n\n## 3. 실행/빌드 제약\n- 실행 시 외부 라이브러리 참조가 있으면 안 됨 (CDN, 외부 폰트 포함 금지)\n- {%언어1%} 표준 기반으로 구현\n- `python -m http.server 8001` 로 동작 가능해야 함\n- 브라우저 기본 지원 폰트만 사용\n\n## 4. 이미지·사운드 리소스\n- 이모지를 최대한 활용\n- 인터넷 무료 이미지 리소스 사용 시 출처 표기\n- 인터넷 무료 오디오 리소스 사용 시 출처 표기\n- 오디오 리소스는 base64로 변환하여 JS에 포함시킬 것\n\n## 5. 코딩 규칙 (Coding Rules)\n- 모든 코드는 모듈화하여 작성\n- 변수·함수명은 `camelCase`, 클래스명은 `PascalCase` 사용\n- 주석은 코드의 의도를 명확히 설명할 것\n- 성능에 미치는 영향을 고려하여 최적화된 코드를 작성\n- 코드를 수정하기 전에 `test` 폴더의 기존 로직을 확인하라\n\n## 6. 저장 메커니즘 (DB & Store)\n- **DB:** 브라우저 IndexedDB 사용\n- 데이터는 JSON 형식으로 저장·불러오기 가능\n- 내부 DB를 통해 여러 작업물을 저장 및 불러오기 가능\n- 구조상 필요하다면 모든 DB 내용을 하나의 JSON으로 다운로드 및 등록(가져오기) 가능\n- 구조상 필요하다면 내부 DB에 저장된 작업물의 삭제·이름 변경·불러오기 가능\n- 사용자의 진행 상황은 IndexedDB에 저장되어 **작업 이어하기** 지원\n- 데이터 형식(JSON)은 수정과 추가가 쉬워야 함\n- DB 손상·오류 상황에서도 앱이 동작해야 함\n\n## 7. 지원 환경 (Targets)\n- PC 브라우저 동작 가능\n- 모바일 터치 UI 지원\n- 폴더블 기기의 펼침 화면·접힘 화면 모두 지원\n- 갤럭시 폴드7 펼침 화면에서 고해상도로 보이도록 할 것\n\n## 8. 기능 목표 (Goals)\n- 한글·영어 다국어 지원\n- 브라우저가 지원하는 기본 폰트만 사용\n- {%목표%1}\n- {%목표%2}\n- {%목표%3}\n\n## 9. 마무리 (Build & Release)\n- 빌드 시 `index.html` 하나의 산출물로 나오도록 할 것\n- 실행에 필요한 파일만 `release` 폴더로 복사하는 `build.sh`(POSIX) 작성\n- 실행에 필요한 파일만 `release` 폴더로 복사하는 Windows용 `build.bat` 작성\n- Windows용 `build.bat`는 한글이 깨지지 않도록 cp949 사용\n- 인터넷 검색하여 좋은 아이디어가 있으면 추가할 것\n";</script>
   <script>"use strict";
 /// <reference path="types.ts" />
 /** UI string table and tiny translation helper. */
@@ -719,6 +719,16 @@ var App;
         function seededDefaults() {
             return { ...DEFAULT_VALUES };
         }
+        /** Ensure default keys keep their default when missing or blank. */
+        function withDefaults(values) {
+            const merged = { ...values };
+            Object.keys(DEFAULT_VALUES).forEach((k) => {
+                if (merged[k] === undefined || merged[k].trim() === "") {
+                    merged[k] = DEFAULT_VALUES[k];
+                }
+            });
+            return merged;
+        }
         // --- persistence ---------------------------------------------------------
         function snapshot() {
             return {
@@ -998,7 +1008,7 @@ var App;
             const session = await App.DB.loadSession();
             if (session && session.templateText) {
                 state.templateText = session.templateText;
-                state.values = { ...session.values };
+                state.values = withDefaults(session.values);
                 U.toast(App.I18n.t("restored"));
             }
             else {

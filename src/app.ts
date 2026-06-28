@@ -43,6 +43,17 @@ namespace App.Main {
     return { ...DEFAULT_VALUES };
   }
 
+  /** Ensure default keys keep their default when missing or blank. */
+  function withDefaults(values: Record<string, string>): Record<string, string> {
+    const merged = { ...values };
+    Object.keys(DEFAULT_VALUES).forEach((k) => {
+      if (merged[k] === undefined || merged[k].trim() === "") {
+        merged[k] = DEFAULT_VALUES[k];
+      }
+    });
+    return merged;
+  }
+
   // --- persistence ---------------------------------------------------------
   function snapshot(): App.WorkRecord {
     return {
@@ -355,7 +366,7 @@ namespace App.Main {
     const session = await App.DB.loadSession();
     if (session && session.templateText) {
       state.templateText = session.templateText;
-      state.values = { ...session.values };
+      state.values = withDefaults(session.values);
       U.toast(App.I18n.t("restored"));
     } else {
       state.templateText = defaultTemplate();
