@@ -55,8 +55,8 @@ writeFileSync(join(root, "index.html"), html, "utf8");
 console.log("Wrote index.html (" + html.length + " bytes)");
 
 // 4) Copy ONLY the runtime artifact into release/ (CLAUDE.md §9).
-//    The app is a single self-contained file; release ships it as workoder.html.
-const RELEASE_NAME = "workoder.html";
+//    The app is a single self-contained file; release ships it as workorder.html.
+const RELEASE_NAME = "workorder.html";
 const releaseDir = join(root, "release");
 if (!existsSync(releaseDir)) {
   mkdirSync(releaseDir, { recursive: true });
